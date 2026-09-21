@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../models/cart.dart';
 import '../services/cart_service.dart';
+import '../widgets/branded_loading.dart';
 import '../widgets/custom_text.dart';
 import 'detail_screen.dart';
 
@@ -70,6 +71,8 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cart'),
@@ -85,7 +88,9 @@ class _CartScreenState extends State<CartScreen> {
         future: _cartFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const BrandedLoadingIndicator(
+              message: 'Loading your cart...',
+            );
           }
 
           if (snapshot.hasError) {
@@ -189,8 +194,8 @@ class _CartScreenState extends State<CartScreen> {
                         height: 56.h,
                         child: FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFBE24),
-                            foregroundColor: Colors.black,
+                            backgroundColor: colors.secondary,
+                            foregroundColor: colors.onSecondary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14.r),
                             ),
@@ -237,8 +242,10 @@ class _CartProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: colors.surface,
       borderRadius: BorderRadius.circular(18.r),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -279,7 +286,7 @@ class _CartProductCard extends StatelessWidget {
                         fontFamily: 'Poppins',
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFFFFB300),
+                        color: colors.primary,
                       ),
                     ),
                     SizedBox(height: 3.h),
@@ -331,6 +338,8 @@ class _QuantityButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return SizedBox(
       width: 34.w,
       height: 30.h,
@@ -338,9 +347,9 @@ class _QuantityButton extends StatelessWidget {
         padding: EdgeInsets.zero,
         style: IconButton.styleFrom(
           backgroundColor: muted
-              ? Theme.of(context).colorScheme.surfaceContainerHighest
-              : const Color(0xFFFFBE24),
-          foregroundColor: muted ? Colors.black54 : Colors.black,
+              ? colors.surfaceContainerHighest
+              : colors.secondary,
+          foregroundColor: muted ? colors.onSurfaceVariant : colors.onSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(9.r),
           ),
@@ -365,6 +374,7 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final formatted = value < 0
         ? '-\$${value.abs().toStringAsFixed(2)}'
         : '\$${value.toStringAsFixed(2)}';
@@ -383,7 +393,7 @@ class _SummaryRow extends StatelessWidget {
             fontFamily: 'Poppins',
             fontSize: emphasized ? 16.sp : 12.sp,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFFFFB300),
+            color: colors.primary,
           ),
         ),
       ],

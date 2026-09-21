@@ -8,6 +8,11 @@ import 'package:provider/provider.dart';
 // screens
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/signin_screen.dart';
+import 'screens/splash_screen.dart';
+
+// models
+import 'models/user.dart';
 
 // providers
 import 'providers/theme_provider.dart';
@@ -41,12 +46,28 @@ class MagpusaoAdvMobProg extends StatelessWidget {
             theme: themeModel.lightTheme,
             darkTheme: themeModel.darkTheme,
             themeMode: themeModel.isDark ? ThemeMode.dark : ThemeMode.light,
-            title: 'E-Commerce App',
-            initialRoute: '/home',
+            title: 'Chiikawa Shop',
+            initialRoute: '/splash',
             routes: {
-              '/home': (context) => const HomeScreen(),
+              '/splash': (context) => const SplashScreen(),
+              '/signin': (context) => const SignInScreen(),
               // Enhancement 3: Keep theme controls on a dedicated route.
               '/settings': (context) => const SettingsScreen(),
+            },
+            onGenerateRoute: (settings) {
+              if (settings.name == '/home') {
+                final arguments = settings.arguments;
+                final user = switch (arguments) {
+                  User value => value,
+                  Map<String, dynamic> value => User.fromJson(value),
+                  _ => const User.guest(),
+                };
+                return MaterialPageRoute<void>(
+                  settings: settings,
+                  builder: (_) => HomeScreen(user: user),
+                );
+              }
+              return null;
             },
           );
         },

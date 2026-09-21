@@ -2,54 +2,87 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class ThemeProvider with ChangeNotifier {
-  static const _brandIndigo = Color(0xFF3F51B5);
-  static const _brandAmber = Color(0xFFFFBE24);
-  static const _lightBackground = Color(0xFFF8F5FC);
-  static const _darkBackground = Color(0xFF121212);
-  static const _darkSurface = Color(0xFF1E1E1E);
+  static const avocadoSmoothie = Color(0xFFC2C395);
+  static const blushBeet = Color(0xFFDDBAAE);
+  static const peachProtein = Color(0xFFEFD7CF);
+  static const oatLatte = Color(0xFFDCD4C1);
+  static const honeyOatmilk = Color(0xFFF6EAD4);
+  static const coconutCream = Color(0xFFFFFAF2);
+
+  static const _ink = Color(0xFF454238);
+  static const _mutedInk = Color(0xFF686257);
+  static const _darkBackground = Color(0xFF28271F);
+  static const _darkSurface = Color(0xFF343227);
 
   bool _isDark = false;
   bool get isDark => _isDark;
 
-  ThemeData get lightTheme => ThemeData(
-    brightness: Brightness.light,
-    fontFamily: 'Poppins',
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _brandIndigo,
-      primary: _brandIndigo,
-      secondary: _brandAmber,
-      surface: Colors.white,
-    ),
-    scaffoldBackgroundColor: _lightBackground,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: _brandIndigo,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
-    ),
-  );
+  ThemeData get lightTheme {
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: avocadoSmoothie,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: avocadoSmoothie,
+          onPrimary: _ink,
+          primaryContainer: oatLatte,
+          onPrimaryContainer: _ink,
+          secondary: blushBeet,
+          onSecondary: _ink,
+          secondaryContainer: peachProtein,
+          onSecondaryContainer: _ink,
+          tertiary: peachProtein,
+          onTertiary: _ink,
+          tertiaryContainer: honeyOatmilk,
+          onTertiaryContainer: _ink,
+          surface: coconutCream,
+          onSurface: _ink,
+          onSurfaceVariant: _mutedInk,
+          outline: avocadoSmoothie,
+          outlineVariant: oatLatte,
+          surfaceContainerHighest: oatLatte,
+        );
+
+    return ThemeData(
+      brightness: Brightness.light,
+      fontFamily: 'Poppins',
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: honeyOatmilk,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: avocadoSmoothie,
+        foregroundColor: _ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
+      bottomAppBarTheme: const BottomAppBarThemeData(color: coconutCream),
+      cardTheme: const CardThemeData(color: coconutCream, elevation: 0),
+    );
+  }
 
   ThemeData get darkTheme => ThemeData(
     brightness: Brightness.dark,
     fontFamily: 'Poppins',
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: _brandIndigo,
+      seedColor: avocadoSmoothie,
       brightness: Brightness.dark,
-      primary: const Color(0xFFAAB4FF),
-      secondary: _brandAmber,
+      primary: avocadoSmoothie,
+      secondary: blushBeet,
+      tertiary: peachProtein,
       surface: _darkSurface,
     ),
     scaffoldBackgroundColor: _darkBackground,
     appBarTheme: const AppBarTheme(
-      backgroundColor: _brandIndigo,
-      foregroundColor: Colors.white,
+      backgroundColor: avocadoSmoothie,
+      foregroundColor: _ink,
       elevation: 0,
       scrolledUnderElevation: 0,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
     ),
+    bottomAppBarTheme: const BottomAppBarThemeData(color: _darkSurface),
+    cardTheme: const CardThemeData(color: _darkSurface, elevation: 0),
   );
 
   void toggleTheme() {

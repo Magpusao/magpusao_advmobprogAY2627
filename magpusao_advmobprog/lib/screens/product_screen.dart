@@ -10,11 +10,14 @@ import '../models/product.dart';
 import '../services/product_service.dart';
 
 // widgets
+import '../widgets/branded_loading.dart';
 import '../widgets/custom_text.dart';
 import 'product_details_screen.dart';
 
 class ProductScreen extends StatefulWidget {
-  const ProductScreen({super.key});
+  const ProductScreen({super.key, this.userId = 5});
+
+  final int userId;
 
   @override
   State<ProductScreen> createState() => _ProductScreenState();
@@ -72,7 +75,9 @@ class _ProductScreenState extends State<ProductScreen> {
         future: _productsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const BrandedLoadingIndicator(
+              message: 'Loading products...',
+            );
           }
 
           if (snapshot.hasError) {
@@ -96,7 +101,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   textInputAction: TextInputAction.search,
                   onChanged: _search,
                   decoration: InputDecoration(
-                    hintText: 'Search products',
+                    hintText: 'Search products...',
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchQuery.isEmpty
                         ? null
@@ -146,8 +151,10 @@ class _ProductScreenState extends State<ProductScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ProductDetailsScreen(product: product),
+                                    builder: (context) => ProductDetailsScreen(
+                                      product: product,
+                                      userId: widget.userId,
+                                    ),
                                   ),
                                 );
                               },
@@ -193,7 +200,9 @@ class _ProductScreenState extends State<ProductScreen> {
                                             fontFamily: 'Poppins',
                                             fontSize: 16.sp,
                                             fontWeight: FontWeight.bold,
-                                            color: const Color(0xFFFFB300),
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                           ),
                                         ),
                                       ],

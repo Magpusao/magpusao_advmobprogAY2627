@@ -8,9 +8,14 @@ import '../widgets/custom_text.dart';
 // Enhancement 2: This screen receives the selected Product model and renders
 // its complete details without making another request to the API endpoint.
 class ProductDetailsScreen extends StatefulWidget {
-  const ProductDetailsScreen({super.key, required this.product});
+  const ProductDetailsScreen({
+    super.key,
+    required this.product,
+    this.userId = 5,
+  });
 
   final Product product;
+  final int userId;
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -25,7 +30,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     setState(() => _isAdding = true);
     try {
       final cart = await CartService().addToCart(
-        userId: 5,
+        userId: widget.userId,
         productId: product.id,
         quantity: 1,
       );
@@ -111,11 +116,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           fontFamily: 'Poppins',
                           fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFFB300),
+                          color: colorScheme.primary,
                         ),
                       ),
                     ),
-                    const Icon(Icons.star, color: Colors.amber),
+                    Icon(Icons.star, color: colorScheme.primary),
                     SizedBox(width: 4.w),
                     CustomText(
                       text: product.rating.toStringAsFixed(1),
@@ -153,8 +158,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   height: 52.h,
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFBE24),
-                      foregroundColor: Colors.black,
+                      backgroundColor: colorScheme.secondary,
+                      foregroundColor: colorScheme.onSecondary,
                     ),
                     onPressed: _isAdding ? null : _addToCart,
                     icon: _isAdding

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'account_screen.dart';
+
+import '../models/user.dart';
 import 'cart_screen.dart';
 import 'chat_screen.dart';
+import 'profile_screen.dart';
 import 'product_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final String username;
-  const HomeScreen({super.key, this.username = 'User'});
+  const HomeScreen({super.key, this.user = const User.guest()});
+
+  final User user;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,10 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
-        children: const [
-          ProductScreen(),
-          CartScreen(userId: 5),
-          AccountScreen(),
+        children: [
+          ProductScreen(userId: widget.user.id),
+          CartScreen(userId: widget.user.id),
+          ProfileScreen(user: widget.user),
         ],
       ),
       floatingActionButton: _selectedIndex == 0
@@ -32,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
               key: const Key('homeChatButton'),
               tooltip: 'Open chat',
               backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Colors.black,
+              foregroundColor: Theme.of(context).colorScheme.onSecondary,
               shape: const CircleBorder(),
               onPressed: () {
                 Navigator.of(context).push(
@@ -71,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: _NavigationButton(
                 icon: Icons.person,
-                label: 'Account',
+                label: 'Profile',
                 selected: _selectedIndex == 2,
                 height: _navigationBarHeight,
                 onPressed: () => _onTapped(2),

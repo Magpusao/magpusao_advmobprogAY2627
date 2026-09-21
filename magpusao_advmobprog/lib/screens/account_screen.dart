@@ -73,10 +73,12 @@ class _AccountTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: Material(
-        color: Theme.of(context).colorScheme.surface,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16.r),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
@@ -86,10 +88,10 @@ class _AccountTile extends StatelessWidget {
             width: 42.w,
             height: 42.w,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFBE24).withValues(alpha: 0.18),
+              color: colors.secondary.withValues(alpha: 0.28),
               borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Icon(icon, color: const Color(0xFF3F51B5)),
+            child: Icon(icon, color: colors.primary),
           ),
           title: CustomText(
             text: title,

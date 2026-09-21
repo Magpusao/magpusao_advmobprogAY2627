@@ -14,9 +14,10 @@ class ProductService {
       return getAllProducts();
     }
 
+    final apiQuery = searchQueryFor(normalizedQuery);
     final searchUri = Uri.parse(
       '$host/products/search',
-    ).replace(queryParameters: {'q': normalizedQuery});
+    ).replace(queryParameters: {'q': apiQuery});
     final products = await _getProducts(searchUri);
     if (products.isNotEmpty) {
       return products;
@@ -31,6 +32,20 @@ class ProductService {
       '$host/products/search',
     ).replace(queryParameters: {'q': fallbackQuery});
     return _getProducts(fallbackUri);
+  }
+
+  static String searchQueryFor(String query) {
+    final normalized = query.trim();
+    switch (normalized.toLowerCase()) {
+      case 'iphone 7':
+        // DummyJSON no longer includes an iPhone 7 record, so show the
+        // available iPhone catalog for this requested model.
+        return 'iPhone';
+      case 'motorcycle':
+        return 'motorcycle';
+      default:
+        return normalized;
+    }
   }
 
   static String? fallbackQueryFor(String query) {
