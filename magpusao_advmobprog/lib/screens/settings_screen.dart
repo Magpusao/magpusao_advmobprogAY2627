@@ -18,10 +18,14 @@ class SettingsScreen extends StatelessWidget {
         secondary: Icon(
           themeProvider.isDark ? Icons.dark_mode : Icons.light_mode,
         ),
-        title: const Text('Dark mode'),
-        subtitle: const Text('Use the dark theme throughout the app'),
+        title: Text(themeProvider.isDark ? 'Light mode' : 'Dark mode'),
+        subtitle: Text(
+          themeProvider.isDark
+              ? 'Use the light theme throughout the app'
+              : 'Use the dark theme throughout the app',
+        ),
         value: themeProvider.isDark,
-        onChanged: (_) => themeProvider.toggleTheme(),
+        onChanged: themeProvider.setDarkMode,
       ),
     );
   }

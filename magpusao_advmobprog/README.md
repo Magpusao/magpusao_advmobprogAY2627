@@ -1,9 +1,5 @@
 # Lab Activity 2: Discussion
-The application fetches products from the DummyJSON API and displays them in a grid. Three enhancements were added: a search bar for filtering products, a details page that opens when a product card is selected, and a settings page containing the dark/light mode switch.
-## Model, Service, and Screen Interaction
-`ProductService` requests data from the API and converts the JSON response into `Product` models. `ProductScreen` uses `FutureBuilder` to handle loading, error, and successful states before displaying the products. The selected model is passed directly to `ProductDetailsScreen`.
+All three enhancements have been implemented, a search bar for filtering articles, an article details page when a card is clicked, and a Settings page for the Dark/Light Mode switch. Each enhancement is also commented in the source code for reference.
 
-Data flow:
-`API -> ProductService -> Product model -> ProductScreen -> ProductDetailsScreen`
-## Design Pattern
-The project uses a layered Model-Service-Screen pattern. Models represent API data, services handle HTTP requests, screens manage the interface, and Provider controls the application-wide theme. This separation makes the code easier to understand and maintain.
+# Lab Activity 3: Discussion
+For this activity, I completed all the required enhancements by creating a cart_screen, making each cart item clickable and connected to the existing detail_screen, converting the chat navigation into a FloatingActionButton, and integrating the DummyJSON Cart API for retrieving a user’s cart and adding products. The implementation follows a clear model-service-screen structure, where the cart model represents the API data, the service handles API requests, and the screen displays the returned cart information. When an item is selected, its product data is passed to the same detail_screen.dart for viewing. I also implemented the Cart getById endpoint, which retrieves a specific cart using its ID, while the user cart endpoint is used to display the cart associated with a particular user.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-import '../widgets/custom_text.dart';
+import 'account_screen.dart';
+import 'cart_screen.dart';
+import 'chat_screen.dart';
 import 'product_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,60 +13,72 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-  final PageController _pageController = PageController();
+  static const double _navigationBarHeight = 72;
 
+  int _selectedIndex = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          const ProductScreen(),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.shopping_cart, size: 80.w),
-                SizedBox(height: 20.h),
-                CustomText(
-                  text: 'Cart Page',
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ],
-            ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.person, size: 80.w),
-                SizedBox(height: 20.h),
-                CustomText(
-                  text: 'Profile Page',
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ],
-            ),
-          ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: const [
+          ProductScreen(),
+          CartScreen(userId: 5),
+          AccountScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onTapped,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+              key: const Key('homeChatButton'),
+              tooltip: 'Open chat',
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              foregroundColor: Colors.black,
+              shape: const CircleBorder(),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const ChatScreen(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.chat, size: 25),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: BottomAppBar(
+        height: _navigationBarHeight,
+        padding: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Expanded(
+              child: _NavigationButton(
+                icon: Icons.home,
+                label: 'Home',
+                selected: _selectedIndex == 0,
+                height: _navigationBarHeight,
+                onPressed: () => _onTapped(0),
+              ),
+            ),
+            Expanded(
+              child: _NavigationButton(
+                icon: Icons.shopping_cart,
+                label: 'Cart',
+                selected: _selectedIndex == 1,
+                height: _navigationBarHeight,
+                onPressed: () => _onTapped(1),
+              ),
+            ),
+            Expanded(
+              child: _NavigationButton(
+                icon: Icons.person,
+                label: 'Account',
+                selected: _selectedIndex == 2,
+                height: _navigationBarHeight,
+                onPressed: () => _onTapped(2),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -75,6 +87,41 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    _pageController.jumpToPage(index);
+  }
+}
+
+class _NavigationButton extends StatelessWidget {
+  const _NavigationButton({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.height,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final double height;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: SizedBox(
+          height: height,
+          child: Center(child: Icon(icon, color: color, size: 27)),
+        ),
+      ),
+    );
   }
 }

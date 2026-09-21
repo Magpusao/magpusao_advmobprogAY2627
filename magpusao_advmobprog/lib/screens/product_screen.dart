@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -21,9 +23,8 @@ class ProductScreen extends StatefulWidget {
 class _ProductScreenState extends State<ProductScreen> {
   late Future<List<Product>> _productsFuture;
 
-  // Enhancement 1: Store the search text so the fetched product list can be
-  // filtered locally without sending another API request for every keystroke.
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
   String _searchQuery = '';
 
   @override
@@ -34,30 +35,29 @@ class _ProductScreenState extends State<ProductScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  // Enhancement 1: Search the product title, category, brand, and description.
-  List<Product> _filterProducts(List<Product> products) {
-    final query = _searchQuery.trim().toLowerCase();
-    if (query.isEmpty) {
-      return products;
-    }
-
-    return products.where((product) {
-      return product.title.toLowerCase().contains(query) ||
-          product.category.toLowerCase().contains(query) ||
-          product.brand.toLowerCase().contains(query) ||
-          product.description.toLowerCase().contains(query);
-    }).toList();
+  void _search(String value) {
+    _searchDebounce?.cancel();
+    setState(() => _searchQuery = value);
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() {
+        _productsFuture = value.trim().isEmpty
+            ? ProductService().getAllProducts()
+            : ProductService().searchProducts(value);
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Products'),
+        title: const Text('Home'),
         actions: [
           // Enhancement 3: Open the separate settings screen where the user
           // can switch between the application's light and dark themes.
@@ -85,14 +85,6 @@ class _ProductScreenState extends State<ProductScreen> {
           }
 
           final products = snapshot.data ?? [];
-          if (products.isEmpty) {
-            return Center(
-              child: CustomText(text: 'No products found.', fontSize: 16.sp),
-            );
-          }
-
-          final filteredProducts = _filterProducts(products);
-
           return Column(
             children: [
               // Enhancement 1: The search bar is displayed above the product
@@ -102,11 +94,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 child: TextField(
                   controller: _searchController,
                   textInputAction: TextInputAction.search,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
+                  onChanged: _search,
                   decoration: InputDecoration(
                     hintText: 'Search products',
                     prefixIcon: const Icon(Icons.search),
@@ -116,9 +104,7 @@ class _ProductScreenState extends State<ProductScreen> {
                             tooltip: 'Clear search',
                             onPressed: () {
                               _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
+                              _search('');
                             },
                             icon: const Icon(Icons.close),
                           ),
@@ -129,7 +115,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 ),
               ),
               Expanded(
-                child: filteredProducts.isEmpty
+                child: products.isEmpty
                     ? Center(
                         child: CustomText(
                           text: 'No matching products found.',
@@ -142,14 +128,17 @@ class _ProductScreenState extends State<ProductScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 10.w,
                           mainAxisSpacing: 10.h,
-                          childAspectRatio: 0.75,
+                          childAspectRatio: 0.72,
                         ),
-                        itemCount: filteredProducts.length,
+                        itemCount: products.length,
                         itemBuilder: (context, index) {
-                          final product = filteredProducts[index];
+                          final product = products[index];
                           return Card(
-                            elevation: 2,
+                            elevation: 0,
                             clipBehavior: Clip.antiAlias,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18.r),
+                            ),
                             // Enhancement 2: Make the complete card clickable
                             // and pass its Product model to the details screen.
                             child: InkWell(
@@ -204,7 +193,7 @@ class _ProductScreenState extends State<ProductScreen> {
                                             fontFamily: 'Poppins',
                                             fontSize: 16.sp,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.green,
+                                            color: const Color(0xFFFFB300),
                                           ),
                                         ),
                                       ],

@@ -2,14 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../models/product.dart';
+import '../services/cart_service.dart';
 import '../widgets/custom_text.dart';
 
 // Enhancement 2: This screen receives the selected Product model and renders
 // its complete details without making another request to the API endpoint.
-class ProductDetailsScreen extends StatelessWidget {
+class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.product});
 
   final Product product;
+
+  @override
+  State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
+}
+
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  bool _isAdding = false;
+
+  Product get product => widget.product;
+
+  Future<void> _addToCart() async {
+    setState(() => _isAdding = true);
+    try {
+      final cart = await CartService().addToCart(
+        userId: 5,
+        productId: product.id,
+        quantity: 1,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${product.title} added to simulated cart #${cart.id}.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not add to cart: $error')));
+    } finally {
+      if (mounted) {
+        setState(() => _isAdding = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +111,7 @@ class ProductDetailsScreen extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                          color: const Color(0xFFFFB300),
                         ),
                       ),
                     ),
@@ -109,6 +147,31 @@ class ProductDetailsScreen extends StatelessWidget {
                   value: product.warrantyInformation,
                 ),
                 _DetailRow(label: 'Returns', value: product.returnPolicy),
+                SizedBox(height: 12.h),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52.h,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFBE24),
+                      foregroundColor: Colors.black,
+                    ),
+                    onPressed: _isAdding ? null : _addToCart,
+                    icon: _isAdding
+                        ? SizedBox(
+                            width: 18.w,
+                            height: 18.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.add_shopping_cart),
+                    label: Text(
+                      _isAdding ? 'Adding…' : 'Add to Cart',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
