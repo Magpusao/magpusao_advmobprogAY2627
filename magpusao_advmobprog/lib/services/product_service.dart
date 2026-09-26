@@ -38,8 +38,6 @@ class ProductService {
     final normalized = query.trim();
     switch (normalized.toLowerCase()) {
       case 'iphone 7':
-        // DummyJSON no longer includes an iPhone 7 record, so show the
-        // available iPhone catalog for this requested model.
         return 'iPhone';
       case 'motorcycle':
         return 'motorcycle';
