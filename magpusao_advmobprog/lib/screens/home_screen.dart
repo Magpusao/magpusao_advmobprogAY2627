@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/cart_provider.dart';
 import 'account_screen.dart';
 import 'cart_screen.dart';
 import 'chat_screen.dart';
@@ -18,6 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   @override
   Widget build(BuildContext context) {
+    final cartItemCount = context.watch<CartProvider>().totalQuantity;
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -65,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Cart',
                 selected: _selectedIndex == 1,
                 height: _navigationBarHeight,
+                badgeCount: cartItemCount,
                 onPressed: () => _onTapped(1),
               ),
             ),
@@ -97,6 +103,7 @@ class _NavigationButton extends StatelessWidget {
     required this.selected,
     required this.height,
     required this.onPressed,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -104,6 +111,7 @@ class _NavigationButton extends StatelessWidget {
   final bool selected;
   final double height;
   final VoidCallback onPressed;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +127,13 @@ class _NavigationButton extends StatelessWidget {
         label: label,
         child: SizedBox(
           height: height,
-          child: Center(child: Icon(icon, color: color, size: 27)),
+          child: Center(
+            child: Badge(
+              isLabelVisible: badgeCount > 0,
+              label: Text(badgeCount > 99 ? '99+' : '$badgeCount'),
+              child: Icon(icon, color: color, size: 27),
+            ),
+          ),
         ),
       ),
     );

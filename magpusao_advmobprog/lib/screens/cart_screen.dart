@@ -1,75 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 import '../models/cart.dart';
-import '../services/cart_service.dart';
+import '../providers/cart_provider.dart';
 import '../widgets/custom_text.dart';
 import 'detail_screen.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends StatelessWidget {
   const CartScreen({super.key, this.userId = 5});
 
   final int userId;
 
   @override
-  State<CartScreen> createState() => _CartScreenState();
-}
-
-class _CartScreenState extends State<CartScreen> {
-  late Future<Cart?> _cartFuture;
-  final Map<int, int> _quantities = {};
-  final List<CartProduct> _cartProducts = [];
-  int? _loadedCartId;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCart();
-  }
-
-  void _loadCart() {
-    _quantities.clear();
-    _cartProducts.clear();
-    _loadedCartId = null;
-    _cartFuture = CartService().getCartByUser(widget.userId);
-  }
-
-  void _retry() {
-    setState(_loadCart);
-  }
-
-  void _changeQuantity(CartProduct product, int change) {
-    final current = _quantities[product.id] ?? product.quantity;
-    final updatedQuantity = current + change;
-    setState(() {
-      if (updatedQuantity <= 0) {
-        _cartProducts.removeWhere((item) => item.id == product.id);
-        _quantities.remove(product.id);
-      } else {
-        _quantities[product.id] = updatedQuantity.clamp(1, 99);
-      }
-    });
-  }
-
-  double _subtotal() {
-    return _cartProducts.fold(0, (sum, product) {
-      final quantity = _quantities[product.id] ?? product.quantity;
-      return sum + (product.price * quantity);
-    });
-  }
-
-  double _discountedTotal() {
-    return _cartProducts.fold(0, (sum, product) {
-      final quantity = _quantities[product.id] ?? product.quantity;
-      final unitPrice = product.quantity == 0
-          ? product.price
-          : product.discountedTotal / product.quantity;
-      return sum + (unitPrice * quantity);
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final cart = context.watch<CartProvider>();
+    final cartProducts = cart.products;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cart'),
@@ -81,83 +28,44 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<Cart?>(
-        future: _cartFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return _CartMessage(
+      body: cart.isLoading && cart.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : cart.loadError != null && cart.isEmpty
+          ? _CartMessage(
               icon: Icons.cloud_off_outlined,
               title: 'Could not load the cart',
-              message: '${snapshot.error}',
+              message: '${cart.loadError}',
               actionLabel: 'Try again',
-              onAction: _retry,
-            );
-          }
-
-          final cart = snapshot.data;
-          if (cart == null) {
-            return const _CartMessage(
+              onAction: () => cart.retryLoad(userId),
+            )
+          : cart.isEmpty
+          ? const _CartMessage(
               icon: Icons.remove_shopping_cart_outlined,
               title: 'Your cart is empty',
               message: 'Add a product from Home to get started.',
-            );
-          }
-
-          if (_loadedCartId != cart.id) {
-            _loadedCartId = cart.id;
-            _cartProducts
-              ..clear()
-              ..addAll(cart.products);
-            _quantities
-              ..clear()
-              ..addEntries(
-                cart.products.map(
-                  (product) => MapEntry(product.id, product.quantity),
-                ),
-              );
-          }
-
-          if (_cartProducts.isEmpty) {
-            return const _CartMessage(
-              icon: Icons.remove_shopping_cart_outlined,
-              title: 'Your cart is empty',
-              message: 'Add a product from Home to get started.',
-            );
-          }
-
-          final subtotal = _subtotal();
-          final total = _discountedTotal();
-          final savings = subtotal - total;
-
-          return Column(
-            children: [
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    _retry();
-                    await _cartFuture;
-                  },
+            )
+          : Column(
+              children: [
+                Expanded(
                   child: ListView.separated(
                     padding: EdgeInsets.fromLTRB(12.w, 12.h, 12.w, 8.h),
-                    itemCount: _cartProducts.length,
+                    itemCount: cartProducts.length,
                     separatorBuilder: (_, _) => SizedBox(height: 10.h),
                     itemBuilder: (context, index) {
-                      final product = _cartProducts[index];
-                      final quantity = _quantities[product.id]!;
+                      final product = cartProducts[index];
+                      final quantity = cart.quantityOf(product);
                       return _CartProductCard(
                         product: product,
                         quantity: quantity,
-                        onIncrease: () => _changeQuantity(product, 1),
-                        onDecrease: () => _changeQuantity(product, -1),
+                        onIncrease: () => cart.increaseQuantity(product),
+                        onDecrease: () => cart.decreaseQuantity(product),
                         onOpen: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => DetailScreen(product: product),
+                              builder: (_) => DetailScreen(
+                                product: cart.withCurrentQuantity(product),
+                              ),
                             ),
                           );
                         },
@@ -165,57 +73,59 @@ class _CartScreenState extends State<CartScreen> {
                     },
                   ),
                 ),
-              ),
-              Container(
-                padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
-                color: Theme.of(context).colorScheme.surface,
-                child: SafeArea(
-                  top: false,
-                  bottom: false,
-                  child: Column(
-                    children: [
-                      _SummaryRow(label: 'Subtotal', value: subtotal),
-                      SizedBox(height: 4.h),
-                      _SummaryRow(label: 'Discount', value: -savings),
-                      Divider(height: 18.h),
-                      _SummaryRow(
-                        label: 'Total',
-                        value: total,
-                        emphasized: true,
-                      ),
-                      SizedBox(height: 12.h),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56.h,
-                        child: FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFBE24),
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14.r),
+                Container(
+                  padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
+                  color: Theme.of(context).colorScheme.surface,
+                  child: SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        _SummaryRow(label: 'Subtotal', value: cart.subtotal),
+                        SizedBox(height: 4.h),
+                        _SummaryRow(
+                          label: 'Discount',
+                          value: -(cart.subtotal - cart.discountedTotal),
+                        ),
+                        Divider(height: 18.h),
+                        _SummaryRow(
+                          label: 'Total',
+                          value: cart.discountedTotal,
+                          emphasized: true,
+                        ),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56.h,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFFFBE24),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
+                            ),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Order confirmed successfully.',
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Confirm Order',
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Order confirmed successfully.'),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'Confirm Order',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-      ),
+              ],
+            ),
     );
   }
 }
@@ -285,7 +195,7 @@ class _CartProductCard extends StatelessWidget {
                     SizedBox(height: 3.h),
                     CustomText(
                       text:
-                          '${product.discountPercentage.toStringAsFixed(0)}% off - \$${product.total.toStringAsFixed(2)} total',
+                          '${product.discountPercentage.toStringAsFixed(0)}% off - \$${(product.price * quantity).toStringAsFixed(2)} total',
                       fontSize: 10.sp,
                     ),
                   ],

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 
 import '../models/product.dart';
-import '../services/cart_service.dart';
+import '../providers/cart_provider.dart';
 import '../widgets/custom_text.dart';
 
 // Enhancement 2: This screen receives the selected Product model and renders
@@ -17,36 +18,13 @@ class ProductDetailsScreen extends StatefulWidget {
 }
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
-  bool _isAdding = false;
-
   Product get product => widget.product;
 
-  Future<void> _addToCart() async {
-    setState(() => _isAdding = true);
-    try {
-      final cart = await CartService().addToCart(
-        userId: 5,
-        productId: product.id,
-        quantity: 1,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${product.title} added to simulated cart #${cart.id}.',
-          ),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not add to cart: $error')));
-    } finally {
-      if (mounted) {
-        setState(() => _isAdding = false);
-      }
-    }
+  void _addToCart() {
+    context.read<CartProvider>().addProduct(product);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${product.title} added to your cart.')),
+    );
   }
 
   @override
@@ -156,19 +134,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       backgroundColor: const Color(0xFFFFBE24),
                       foregroundColor: Colors.black,
                     ),
-                    onPressed: _isAdding ? null : _addToCart,
-                    icon: _isAdding
-                        ? SizedBox(
-                            width: 18.w,
-                            height: 18.w,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.add_shopping_cart),
-                    label: Text(
-                      _isAdding ? 'Adding…' : 'Add to Cart',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    onPressed: _addToCart,
+                    icon: const Icon(Icons.add_shopping_cart),
+                    label: const Text(
+                      'Add to Cart',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

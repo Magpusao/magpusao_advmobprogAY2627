@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roles_advmobprog/models/cart.dart';
+import 'package:roles_advmobprog/models/product.dart';
+import 'package:roles_advmobprog/providers/cart_provider.dart';
 import 'package:roles_advmobprog/providers/theme_provider.dart';
 import 'package:roles_advmobprog/screens/chat_screen.dart';
 import 'package:roles_advmobprog/screens/home_screen.dart';
@@ -10,6 +12,26 @@ import 'package:roles_advmobprog/services/product_service.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  test('products added from Home stay in the shared cart', () {
+    final provider = CartProvider();
+    final product = Product.fromJson({
+      'id': 24,
+      'title': 'Blue Frock',
+      'price': 29.99,
+      'discountPercentage': 10,
+      'thumbnail': 'https://example.com/blue-frock.png',
+    });
+
+    provider.addProduct(product);
+    provider.addProduct(product);
+
+    expect(provider.products.single.title, 'Blue Frock');
+    expect(provider.quantityOf(provider.products.single), 2);
+    expect(provider.totalQuantity, 2);
+    expect(provider.subtotal, closeTo(59.98, 0.001));
+    expect(provider.discountedTotal, closeTo(53.982, 0.001));
+  });
+
   test('Cart.fromJson maps user cart totals and products', () {
     final cart = Cart.fromJson({
       'id': 19,
@@ -136,11 +158,14 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      ScreenUtilInit(
-        designSize: const Size(412, 715),
-        builder: (context, child) => MaterialApp(
-          theme: ThemeProvider().lightTheme,
-          home: const HomeScreen(),
+      ChangeNotifierProvider(
+        create: (_) => CartProvider(),
+        child: ScreenUtilInit(
+          designSize: const Size(412, 715),
+          builder: (context, child) => MaterialApp(
+            theme: ThemeProvider().lightTheme,
+            home: const HomeScreen(),
+          ),
         ),
       ),
     );
