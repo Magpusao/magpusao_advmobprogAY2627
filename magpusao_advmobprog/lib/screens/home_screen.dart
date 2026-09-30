@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
               key: const Key('homeChatButton'),
               tooltip: 'Open chat',
               backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Theme.of(context).colorScheme.onSecondary,
+              foregroundColor: Colors.black,
               shape: const CircleBorder(),
               onPressed: () {
                 Navigator.of(context).push(

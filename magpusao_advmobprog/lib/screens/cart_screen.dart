@@ -286,7 +286,7 @@ class _CartProductCard extends StatelessWidget {
                         fontFamily: 'Poppins',
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
-                        color: colors.primary,
+                        color: const Color(0xFFFFB300),
                       ),
                     ),
                     SizedBox(height: 3.h),
@@ -348,8 +348,8 @@ class _QuantityButton extends StatelessWidget {
         style: IconButton.styleFrom(
           backgroundColor: muted
               ? colors.surfaceContainerHighest
-              : colors.secondary,
-          foregroundColor: muted ? colors.onSurfaceVariant : colors.onSecondary,
+              : const Color(0xFFFFBE24),
+          foregroundColor: muted ? Colors.black54 : Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(9.r),
           ),
@@ -374,7 +374,6 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final formatted = value < 0
         ? '-\$${value.abs().toStringAsFixed(2)}'
         : '\$${value.toStringAsFixed(2)}';
@@ -393,7 +392,7 @@ class _SummaryRow extends StatelessWidget {
             fontFamily: 'Poppins',
             fontSize: emphasized ? 16.sp : 12.sp,
             fontWeight: FontWeight.w700,
-            color: colors.primary,
+            color: const Color(0xFFFFB300),
           ),
         ),
       ],

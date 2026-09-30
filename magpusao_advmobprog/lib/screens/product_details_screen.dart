@@ -116,11 +116,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           fontFamily: 'Poppins',
                           fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
+                          color: const Color(0xFFFFB300),
                         ),
                       ),
                     ),
-                    Icon(Icons.star, color: colorScheme.primary),
+                    const Icon(Icons.star, color: Colors.amber),
                     SizedBox(width: 4.w),
                     CustomText(
                       text: product.rating.toStringAsFixed(1),

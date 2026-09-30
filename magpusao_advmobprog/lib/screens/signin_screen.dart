@@ -167,7 +167,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     borderRadius: BorderRadius.circular(14.r),
                   ),
                   child: Text(
-                    'Username: Meow  •  Password: Meow',
+                    'Username: emilys  •  Password: emilyspass',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12.sp,

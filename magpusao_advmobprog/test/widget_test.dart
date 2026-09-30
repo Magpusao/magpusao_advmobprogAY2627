@@ -105,11 +105,11 @@ void main() {
     expect(await service.getUserData(), isNull);
   });
 
-  test('UserService accepts only the Meow credentials', () {
-    expect(UserService.acceptsCredentials('Meow', 'Meow'), isTrue);
-    expect(UserService.acceptsCredentials(' Meow ', 'Meow'), isTrue);
-    expect(UserService.acceptsCredentials('emilys', 'emilyspass'), isFalse);
-    expect(UserService.acceptsCredentials('Meow', 'wrong'), isFalse);
+  test('UserService accepts only the required Emily credentials', () {
+    expect(UserService.acceptsCredentials('emilys', 'emilyspass'), isTrue);
+    expect(UserService.acceptsCredentials(' emilys ', 'emilyspass'), isTrue);
+    expect(UserService.acceptsCredentials('wronguser', 'wrongpass'), isFalse);
+    expect(UserService.acceptsCredentials('emilys', 'wrong'), isFalse);
   });
 
   testWidgets('splash sends a signed-out user to Sign In', (tester) async {
@@ -171,7 +171,10 @@ void main() {
       'assets/images/cat.png',
     );
     expect(signInImage.fit, BoxFit.contain);
-    expect(find.text('Username: Meow  •  Password: Meow'), findsOneWidget);
+    expect(
+      find.text('Username: emilys  •  Password: emilyspass'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('full-page loading state uses the cat logo', (tester) async {
@@ -199,10 +202,10 @@ void main() {
   ) async {
     const user = User(
       id: 7,
-      username: 'Meow',
-      email: 'zandra.meow@car.com',
-      firstName: 'Zandra',
-      lastName: 'Meow',
+      username: 'emilys',
+      email: 'emily.johnson@x.dummyjson.com',
+      firstName: 'Emily',
+      lastName: 'Johnson',
       gender: 'female',
       image: 'https://example.com/old-avatar.png',
       accessToken: 'token',
@@ -222,9 +225,9 @@ void main() {
       (image.image as AssetImage).assetName,
       UserService.profileImageAsset,
     );
-    expect(find.text('Zandra Meow'), findsOneWidget);
-    expect(find.text('@Meow'), findsOneWidget);
-    expect(find.text('zandra.meow@car.com'), findsOneWidget);
+    expect(find.text('Emily Johnson'), findsOneWidget);
+    expect(find.text('@emilys'), findsOneWidget);
+    expect(find.text('emily.johnson@x.dummyjson.com'), findsOneWidget);
   });
 
   testWidgets('splash restores the saved user into Home', (tester) async {
@@ -259,25 +262,26 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Meow'), findsOneWidget);
+    expect(find.text('emilys'), findsOneWidget);
   });
 
-  test('themes use the complete smoothie palette', () {
+  test('themes use the original indigo and amber palette', () {
     final provider = ThemeProvider();
     final light = provider.lightTheme;
 
-    expect(light.scaffoldBackgroundColor, ThemeProvider.honeyOatmilk);
-    expect(light.colorScheme.primary, ThemeProvider.avocadoSmoothie);
-    expect(light.colorScheme.secondary, ThemeProvider.blushBeet);
-    expect(light.colorScheme.tertiary, ThemeProvider.peachProtein);
-    expect(light.colorScheme.primaryContainer, ThemeProvider.oatLatte);
-    expect(light.colorScheme.surface, ThemeProvider.coconutCream);
-    expect(light.appBarTheme.backgroundColor, ThemeProvider.avocadoSmoothie);
-    expect(provider.darkTheme.scaffoldBackgroundColor, const Color(0xFF28271F));
-    expect(provider.darkTheme.colorScheme.surface, const Color(0xFF343227));
+    expect(light.scaffoldBackgroundColor, ThemeProvider.lightBackground);
+    expect(light.colorScheme.primary, ThemeProvider.brandIndigo);
+    expect(light.colorScheme.secondary, ThemeProvider.brandAmber);
+    expect(light.colorScheme.surface, Colors.white);
+    expect(light.appBarTheme.backgroundColor, ThemeProvider.brandIndigo);
+    expect(
+      provider.darkTheme.scaffoldBackgroundColor,
+      ThemeProvider.darkBackground,
+    );
+    expect(provider.darkTheme.colorScheme.surface, ThemeProvider.darkSurface);
     expect(
       provider.darkTheme.appBarTheme.backgroundColor,
-      ThemeProvider.avocadoSmoothie,
+      ThemeProvider.brandIndigo,
     );
   });
 
@@ -353,11 +357,8 @@ void main() {
     final chatButton = tester.widget<FloatingActionButton>(
       find.byKey(const Key('homeChatButton')),
     );
-    expect(chatButton.backgroundColor, ThemeProvider.blushBeet);
-    expect(
-      chatButton.foregroundColor,
-      ThemeProvider().lightTheme.colorScheme.onSecondary,
-    );
+    expect(chatButton.backgroundColor, ThemeProvider.brandAmber);
+    expect(chatButton.foregroundColor, Colors.black);
     expect((chatButton.child! as Icon).icon, Icons.chat);
 
     await tester.tap(find.bySemanticsLabel('Cart'));

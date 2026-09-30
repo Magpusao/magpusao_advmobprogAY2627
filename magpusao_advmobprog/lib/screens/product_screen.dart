@@ -200,9 +200,7 @@ class _ProductScreenState extends State<ProductScreen> {
                                             fontFamily: 'Poppins',
                                             fontSize: 16.sp,
                                             fontWeight: FontWeight.bold,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
+                                            color: const Color(0xFFFFB300),
                                           ),
                                         ),
                                       ],

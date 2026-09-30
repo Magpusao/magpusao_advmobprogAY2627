@@ -8,11 +8,11 @@ import '../models/user.dart';
 
 class UserService {
   static const String profileImageAsset = 'assets/images/smart_cat.png';
-  static const String profileFirstName = 'Zandra';
-  static const String profileLastName = 'Meow';
-  static const String profileUsername = 'Meow';
-  static const String profileEmail = 'zandra.meow@car.com';
-  static const String loginPassword = 'Meow';
+  static const String profileFirstName = 'Emily';
+  static const String profileLastName = 'Johnson';
+  static const String profileUsername = 'emilys';
+  static const String profileEmail = 'emily.johnson@x.dummyjson.com';
+  static const String loginPassword = 'emilyspass';
 
   static const String _apiUsername = 'emilys';
   static const String _apiPassword = 'emilyspass';

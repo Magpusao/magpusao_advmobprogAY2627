@@ -50,7 +50,7 @@ class DetailScreen extends StatelessWidget {
               fontFamily: 'Poppins',
               fontSize: 22.sp,
               fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.primary,
+              color: const Color(0xFFFFB300),
             ),
           ),
           SizedBox(height: 24.h),
