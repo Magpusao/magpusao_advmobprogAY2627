@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../services/user_service.dart';
 
@@ -34,15 +35,30 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await userService.loginUser(
-        _usernameController.text,
-        _passwordController.text,
-      );
-      await userService.saveUserData(response);
+      late final Map<String, dynamic> response;
+      if (_usernameController.text.trim().contains('@')) {
+        await userService.signIn(
+          email: _usernameController.text,
+          password: _passwordController.text,
+        );
+        response = await userService.getUserData() ?? {};
+      } else {
+        response = await userService.loginUser(
+          _usernameController.text,
+          _passwordController.text,
+        );
+        await userService.saveUserData(response);
+      }
 
       if (!mounted) return;
       setState(() => _isLoading = false);
       Navigator.pushReplacementNamed(context, '/home', arguments: response);
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: ${error.message ?? error.code}')),
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -101,7 +117,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   autofillHints: const [AutofillHints.username],
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Username',
+                    labelText: 'Username or email',
                     prefixIcon: Icon(Icons.person_outline),
                     border: OutlineInputBorder(),
                   ),
@@ -160,6 +176,14 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
                 SizedBox(height: 18.h),
+                TextButton(
+                  key: const Key('openSignupButton'),
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.pushNamed(context, '/signup'),
+                  child: const Text('Create a Firebase account'),
+                ),
+                SizedBox(height: 8.h),
                 Container(
                   padding: EdgeInsets.all(13.w),
                   decoration: BoxDecoration(

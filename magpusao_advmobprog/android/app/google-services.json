@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921509158633",
+    "project_id": "magpusao-advmobprog-2627",
+    "storage_bucket": "magpusao-advmobprog-2627.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921509158633:android:e5f863cb6418c420e3da78",
+        "android_client_info": {
+          "package_name": "com.example.magpusao_advmobprog"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj90RPJq7GI14vXrlV4sXdW8TW6FizFHE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
