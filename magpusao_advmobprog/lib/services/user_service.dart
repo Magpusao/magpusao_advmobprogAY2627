@@ -75,7 +75,13 @@ class UserService {
   Future<void> updateUsername(String username) async {
     final value = username.trim();
     if (value.isEmpty) throw ArgumentError('Username cannot be empty.');
-    await _firebaseAuth.currentUser?.updateDisplayName(value);
+    final user = _firebaseAuth.currentUser;
+    if (user == null) throw StateError('No Firebase user is signed in.');
+
+    // Firebase Authentication stores an account's username as its display name.
+    await user.updateDisplayName(value);
+    await user.reload();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', value);
   }
@@ -110,6 +116,7 @@ class UserService {
     );
     await user.reauthenticateWithCredential(credential);
     await user.updatePassword(newPassword);
+    await user.reload();
   }
 
   Future<void> _saveFirebaseSession(firebase_auth.User? user) async {
@@ -118,9 +125,13 @@ class UserService {
     await prefs.setString('loginType', 'firebase');
     await prefs.setString('firebaseUid', user.uid);
     await prefs.setString('email', user.email ?? '');
-    if ((prefs.getString('username') ?? '').isEmpty) {
-      await prefs.setString('username', user.displayName ?? user.email ?? '');
-    }
+    final firebaseUsername = user.displayName?.trim() ?? '';
+    await prefs.setString(
+      'username',
+      firebaseUsername.isNotEmpty
+          ? firebaseUsername
+          : prefs.getString('username') ?? user.email ?? '',
+    );
     await prefs.setString('accessToken', await user.getIdToken() ?? '');
   }
 
@@ -185,19 +196,25 @@ class UserService {
     if (prefs.getString('loginType') == 'firebase') {
       final firebaseUser = _firebaseAuth.currentUser;
       if (firebaseUser == null) return null;
+      await firebaseUser.reload();
+      final refreshedUser = _firebaseAuth.currentUser ?? firebaseUser;
+      final firebaseUsername = refreshedUser.displayName?.trim() ?? '';
+      final username = firebaseUsername.isNotEmpty
+          ? firebaseUsername
+          : prefs.getString('username') ?? refreshedUser.email ?? '';
+      await prefs.setString('username', username);
       return {
-        'id': firebaseUser.uid.hashCode & 0x7fffffff,
-        'uid': firebaseUser.uid,
-        'username':
-            prefs.getString('username') ?? firebaseUser.displayName ?? '',
-        'email': firebaseUser.email ?? prefs.getString('email') ?? '',
+        'id': refreshedUser.uid.hashCode & 0x7fffffff,
+        'uid': refreshedUser.uid,
+        'username': username,
+        'email': refreshedUser.email ?? prefs.getString('email') ?? '',
         'firstName': prefs.getString('firstName') ?? '',
         'lastName': prefs.getString('lastName') ?? '',
         'age': prefs.getInt('age'),
         'contactNo': prefs.getString('contactNo') ?? '',
         'gender': prefs.getString('gender') ?? '',
         'image': prefs.getString('image') ?? profileImageAsset,
-        'accessToken': await firebaseUser.getIdToken() ?? '',
+        'accessToken': await refreshedUser.getIdToken() ?? '',
         'refreshToken': '',
         'loginType': 'firebase',
       };

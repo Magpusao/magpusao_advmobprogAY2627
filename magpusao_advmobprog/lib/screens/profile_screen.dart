@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuthException;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -18,6 +19,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isFirebaseLogin = false;
   int? _age;
   String _contactNo = '';
+  bool _isUpdatingAccount = false;
 
   @override
   void initState() {
@@ -46,54 +48,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.pushNamedAndRemoveUntil(context, '/signin', (route) => false);
   }
 
-  Future<String?> _ask(String title, {bool obscure = false}) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
+  Future<String?> _ask(
+    String title, {
+    bool obscure = false,
+    String initialValue = '',
+    String? Function(String value)? validator,
+  }) {
+    return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          obscureText: obscure,
-          decoration: InputDecoration(labelText: title),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (_) => _TextEntryDialog(
+        title: title,
+        obscure: obscure,
+        initialValue: initialValue,
+        validator: validator,
       ),
     );
-    controller.dispose();
-    return result;
   }
 
   Future<void> _updateUsername() async {
-    final username = await _ask('New username');
-    if (username == null || username.trim().isEmpty) return;
-    await UserService().updateUsername(username);
-    await _loadUser();
+    final username = await _ask(
+      'New username',
+      initialValue: _user.username,
+      validator: (value) => value.trim().isEmpty
+          ? 'Username cannot be empty.'
+          : null,
+    );
+    if (username == null) return;
+
+    await _performAccountUpdate(() async {
+      await UserService().updateUsername(username);
+      await _loadUser();
+      _showMessage('Username updated in Firebase.');
+    });
   }
 
   Future<void> _changePassword() async {
-    final current = await _ask('Current password', obscure: true);
-    if (current == null) return;
-    final replacement = await _ask('New password', obscure: true);
-    if (replacement == null || replacement.length < 6) return;
-    await UserService().resetPasswordFromCurrentPassword(
-      currentPassword: current,
-      newPassword: replacement,
+    final current = await _ask(
+      'Current password',
+      obscure: true,
+      validator: (value) => value.isEmpty ? 'Enter your current password.' : null,
     );
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Password updated.')));
+    if (current == null) return;
+    if (!mounted) return;
+    final replacement = await _ask(
+      'New password',
+      obscure: true,
+      validator: (value) => value.length < 6
+          ? 'Password must be at least 6 characters.'
+          : null,
+    );
+    if (replacement == null) return;
+
+    await _performAccountUpdate(() async {
+      await UserService().resetPasswordFromCurrentPassword(
+        currentPassword: current,
+        newPassword: replacement,
+      );
+      _showMessage('Password updated in Firebase.');
+    });
+  }
+
+  Future<void> _performAccountUpdate(Future<void> Function() update) async {
+    if (_isUpdatingAccount) return;
+    setState(() => _isUpdatingAccount = true);
+    try {
+      await update();
+    } on FirebaseAuthException catch (error) {
+      _showMessage(_firebaseErrorMessage(error), isError: true);
+    } on ArgumentError catch (error) {
+      _showMessage(error.message?.toString() ?? 'Invalid value.', isError: true);
+    } on StateError catch (error) {
+      _showMessage(error.message, isError: true);
+    } catch (_) {
+      _showMessage('Unable to update the account. Please try again.', isError: true);
+    } finally {
+      if (mounted) setState(() => _isUpdatingAccount = false);
     }
+  }
+
+  String _firebaseErrorMessage(FirebaseAuthException error) {
+    return switch (error.code) {
+      'wrong-password' || 'invalid-credential' =>
+        'The current password is incorrect.',
+      'weak-password' => 'Choose a stronger password.',
+      'requires-recent-login' =>
+        'Please sign in again before changing this account.',
+      'network-request-failed' =>
+        'Network error. Check your connection and try again.',
+      _ => error.message ?? 'Firebase could not update the account.',
+    };
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    final colors = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? colors.error : null,
+      ),
+    );
   }
 
   Future<void> _deleteAccount() async {
@@ -186,17 +240,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
           if (_isFirebaseLogin) ...[
             OutlinedButton.icon(
-              onPressed: _updateUsername,
+              onPressed: _isUpdatingAccount ? null : _updateUsername,
               icon: const Icon(Icons.edit_outlined),
               label: const Text('Update username'),
             ),
             OutlinedButton.icon(
-              onPressed: _changePassword,
+              onPressed: _isUpdatingAccount ? null : _changePassword,
               icon: const Icon(Icons.password_outlined),
               label: const Text('Change password'),
             ),
             OutlinedButton.icon(
-              onPressed: _deleteAccount,
+              onPressed: _isUpdatingAccount ? null : _deleteAccount,
               icon: const Icon(Icons.delete_forever_outlined),
               label: const Text('Delete account'),
             ),
@@ -220,6 +274,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TextEntryDialog extends StatefulWidget {
+  const _TextEntryDialog({
+    required this.title,
+    required this.obscure,
+    required this.initialValue,
+    this.validator,
+  });
+
+  final String title;
+  final bool obscure;
+  final String initialValue;
+  final String? Function(String value)? validator;
+
+  @override
+  State<_TextEntryDialog> createState() => _TextEntryDialogState();
+}
+
+class _TextEntryDialogState extends State<_TextEntryDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _controller;
+  late bool _obscure;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _controller.text.length,
+    );
+    _obscure = widget.obscure;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.pop(
+      context,
+      widget.obscure ? _controller.text : _controller.text.trim(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _controller,
+          autofocus: true,
+          obscureText: _obscure,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _submit(),
+          decoration: InputDecoration(
+            labelText: widget.title,
+            suffixIcon: widget.obscure
+                ? IconButton(
+                    tooltip: _obscure ? 'Show password' : 'Hide password',
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                  )
+                : null,
+          ),
+          validator: (value) => widget.validator?.call(value ?? ''),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('Save')),
+      ],
     );
   }
 }
