@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/user.dart';
-import 'cart_screen.dart';
 import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'product_screen.dart';
@@ -26,28 +25,10 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _selectedIndex,
         children: [
           ProductScreen(userId: widget.user.id),
-          CartScreen(userId: widget.user.id),
+          const ChatScreen(),
           ProfileScreen(user: widget.user),
         ],
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              key: const Key('homeChatButton'),
-              tooltip: 'Open chat',
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Colors.black,
-              shape: const CircleBorder(),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (context) => const ChatScreen(),
-                  ),
-                );
-              },
-              child: const Icon(Icons.chat, size: 25),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomAppBar(
         height: _navigationBarHeight,
         padding: EdgeInsets.zero,
@@ -64,8 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Expanded(
               child: _NavigationButton(
-                icon: Icons.shopping_cart,
-                label: 'Cart',
+                icon: Icons.chat_bubble_outline,
+                label: 'Chat',
                 selected: _selectedIndex == 1,
                 height: _navigationBarHeight,
                 onPressed: () => _onTapped(1),

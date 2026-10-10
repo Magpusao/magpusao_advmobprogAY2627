@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roles_advmobprog/models/cart.dart';
 import 'package:roles_advmobprog/models/user.dart';
 import 'package:roles_advmobprog/providers/theme_provider.dart';
-import 'package:roles_advmobprog/screens/chat_screen.dart';
 import 'package:roles_advmobprog/screens/home_screen.dart';
 import 'package:roles_advmobprog/screens/profile_screen.dart';
 import 'package:roles_advmobprog/screens/settings_screen.dart';
@@ -331,7 +330,7 @@ void main() {
     expect(find.text('Dark mode'), findsNothing);
   });
 
-  testWidgets('chat button only appears on Home and opens the chat page', (
+  testWidgets('second bottom navigation tab opens the chat list', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(412, 715);
@@ -350,35 +349,21 @@ void main() {
     );
     await tester.pump();
 
-    expect(
-      find.byKey(const Key('homeChatButton')).hitTestable(),
-      findsOneWidget,
-    );
-    final chatButton = tester.widget<FloatingActionButton>(
-      find.byKey(const Key('homeChatButton')),
-    );
-    expect(chatButton.backgroundColor, ThemeProvider.brandAmber);
-    expect(chatButton.foregroundColor, Colors.black);
-    expect((chatButton.child! as Icon).icon, Icons.chat);
+    expect(find.byKey(const Key('chatSearchBar')).hitTestable(), findsNothing);
+    expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('Cart'));
+    await tester.tap(find.bySemanticsLabel('Chat'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byKey(const Key('homeChatButton')).hitTestable(), findsNothing);
+    expect(
+      find.byKey(const Key('chatSearchBar')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(find.text('Messages').hitTestable(), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('Home'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    expect(
-      find.byKey(const Key('homeChatButton')).hitTestable(),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byKey(const Key('homeChatButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ChatScreen), findsOneWidget);
-    expect(find.text('Chat messaging is not available yet.'), findsOneWidget);
-    expect(find.byKey(const Key('homeChatButton')).hitTestable(), findsNothing);
+    expect(find.byKey(const Key('chatSearchBar')).hitTestable(), findsNothing);
   });
 }

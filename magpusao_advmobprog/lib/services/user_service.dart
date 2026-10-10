@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants.dart';
@@ -21,6 +22,7 @@ class UserService {
 
   firebase_auth.FirebaseAuth get _firebaseAuth =>
       firebase_auth.FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   firebase_auth.User? get currentUser => _firebaseAuth.currentUser;
 
@@ -52,11 +54,26 @@ class UserService {
       email: email.trim(),
       password: password,
     );
-    await credential.user?.updateDisplayName(username.trim());
+    final firebaseUser = credential.user;
+    if (firebaseUser == null) {
+      throw StateError('Firebase did not return the newly created user.');
+    }
+    await firebaseUser.updateDisplayName(username.trim());
+    await _firestore.collection('Users').doc(firebaseUser.uid).set({
+      'uid': firebaseUser.uid,
+      'username': username.trim(),
+      'email': email.trim(),
+      'firstName': firstName.trim(),
+      'lastName': lastName.trim(),
+      'age': age,
+      'contactNo': contactNo.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('loginType', 'firebase');
-    await prefs.setString('firebaseUid', credential.user?.uid ?? '');
+    await prefs.setString('firebaseUid', firebaseUser.uid);
     await prefs.setString('username', username.trim());
     await prefs.setString('email', email.trim());
     await prefs.setString('firstName', firstName.trim());
@@ -81,6 +98,12 @@ class UserService {
     // Firebase Authentication stores an account's username as its display name.
     await user.updateDisplayName(value);
     await user.reload();
+    await _firestore.collection('Users').doc(user.uid).set({
+      'uid': user.uid,
+      'username': value,
+      'email': user.email ?? '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', value);
@@ -97,6 +120,7 @@ class UserService {
       password: password,
     );
     await user.reauthenticateWithCredential(credential);
+    await _firestore.collection('Users').doc(user.uid).delete();
     await user.delete();
     await _clearSession();
   }
@@ -133,6 +157,14 @@ class UserService {
           : prefs.getString('username') ?? user.email ?? '',
     );
     await prefs.setString('accessToken', await user.getIdToken() ?? '');
+    await _firestore.collection('Users').doc(user.uid).set({
+      'uid': user.uid,
+      'username': firebaseUsername.isNotEmpty
+          ? firebaseUsername
+          : user.email ?? '',
+      'email': user.email ?? '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   static bool acceptsCredentials(String username, String password) {
@@ -203,15 +235,34 @@ class UserService {
           ? firebaseUsername
           : prefs.getString('username') ?? refreshedUser.email ?? '';
       await prefs.setString('username', username);
+      Map<String, dynamic> cloudProfile = const {};
+      try {
+        final profile = await _firestore
+            .collection('Users')
+            .doc(refreshedUser.uid)
+            .get();
+        cloudProfile = profile.data() ?? const {};
+      } catch (_) {
+        // Authentication and the cached profile still work while offline.
+      }
       return {
         'id': refreshedUser.uid.hashCode & 0x7fffffff,
         'uid': refreshedUser.uid,
         'username': username,
         'email': refreshedUser.email ?? prefs.getString('email') ?? '',
-        'firstName': prefs.getString('firstName') ?? '',
-        'lastName': prefs.getString('lastName') ?? '',
-        'age': prefs.getInt('age'),
-        'contactNo': prefs.getString('contactNo') ?? '',
+        'firstName':
+            cloudProfile['firstName'] as String? ??
+            prefs.getString('firstName') ??
+            '',
+        'lastName':
+            cloudProfile['lastName'] as String? ??
+            prefs.getString('lastName') ??
+            '',
+        'age': (cloudProfile['age'] as num?)?.toInt() ?? prefs.getInt('age'),
+        'contactNo':
+            cloudProfile['contactNo'] as String? ??
+            prefs.getString('contactNo') ??
+            '',
         'gender': prefs.getString('gender') ?? '',
         'image': prefs.getString('image') ?? profileImageAsset,
         'accessToken': await refreshedUser.getIdToken() ?? '',
