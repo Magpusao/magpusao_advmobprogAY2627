@@ -59,7 +59,7 @@ class UserService {
       throw StateError('Firebase did not return the newly created user.');
     }
     await firebaseUser.updateDisplayName(username.trim());
-    await _firestore.collection('Users').doc(firebaseUser.uid).set({
+    await _firestore.collection('users').doc(firebaseUser.uid).set({
       'uid': firebaseUser.uid,
       'username': username.trim(),
       'email': email.trim(),
@@ -98,7 +98,7 @@ class UserService {
     // Firebase Authentication stores an account's username as its display name.
     await user.updateDisplayName(value);
     await user.reload();
-    await _firestore.collection('Users').doc(user.uid).set({
+    await _firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'username': value,
       'email': user.email ?? '',
@@ -120,7 +120,7 @@ class UserService {
       password: password,
     );
     await user.reauthenticateWithCredential(credential);
-    await _firestore.collection('Users').doc(user.uid).delete();
+    await _firestore.collection('users').doc(user.uid).delete();
     await user.delete();
     await _clearSession();
   }
@@ -152,12 +152,10 @@ class UserService {
     final firebaseUsername = user.displayName?.trim() ?? '';
     await prefs.setString(
       'username',
-      firebaseUsername.isNotEmpty
-          ? firebaseUsername
-          : prefs.getString('username') ?? user.email ?? '',
+      firebaseUsername.isNotEmpty ? firebaseUsername : user.email ?? '',
     );
     await prefs.setString('accessToken', await user.getIdToken() ?? '');
-    await _firestore.collection('Users').doc(user.uid).set({
+    await _firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'username': firebaseUsername.isNotEmpty
           ? firebaseUsername
@@ -225,20 +223,23 @@ class UserService {
 
   Future<Map<String, dynamic>?> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.getString('loginType') == 'firebase') {
+    if ((Firebase.apps.isNotEmpty && _firebaseAuth.currentUser != null) ||
+        prefs.getString('loginType') == 'firebase') {
       final firebaseUser = _firebaseAuth.currentUser;
       if (firebaseUser == null) return null;
       await firebaseUser.reload();
       final refreshedUser = _firebaseAuth.currentUser ?? firebaseUser;
+      final hasMatchingCachedProfile =
+          prefs.getString('firebaseUid') == refreshedUser.uid;
       final firebaseUsername = refreshedUser.displayName?.trim() ?? '';
       final username = firebaseUsername.isNotEmpty
           ? firebaseUsername
-          : prefs.getString('username') ?? refreshedUser.email ?? '';
+          : refreshedUser.email ?? '';
       await prefs.setString('username', username);
       Map<String, dynamic> cloudProfile = const {};
       try {
         final profile = await _firestore
-            .collection('Users')
+            .collection('users')
             .doc(refreshedUser.uid)
             .get();
         cloudProfile = profile.data() ?? const {};
@@ -252,16 +253,18 @@ class UserService {
         'email': refreshedUser.email ?? prefs.getString('email') ?? '',
         'firstName':
             cloudProfile['firstName'] as String? ??
-            prefs.getString('firstName') ??
+            (hasMatchingCachedProfile ? prefs.getString('firstName') : null) ??
             '',
         'lastName':
             cloudProfile['lastName'] as String? ??
-            prefs.getString('lastName') ??
+            (hasMatchingCachedProfile ? prefs.getString('lastName') : null) ??
             '',
-        'age': (cloudProfile['age'] as num?)?.toInt() ?? prefs.getInt('age'),
+        'age':
+            (cloudProfile['age'] as num?)?.toInt() ??
+            (hasMatchingCachedProfile ? prefs.getInt('age') : null),
         'contactNo':
             cloudProfile['contactNo'] as String? ??
-            prefs.getString('contactNo') ??
+            (hasMatchingCachedProfile ? prefs.getString('contactNo') : null) ??
             '',
         'gender': prefs.getString('gender') ?? '',
         'image': prefs.getString('image') ?? profileImageAsset,
@@ -289,6 +292,9 @@ class UserService {
   }
 
   Future<bool> isLoggedIn() async {
+    if (Firebase.apps.isNotEmpty && _firebaseAuth.currentUser != null) {
+      return true;
+    }
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getString('loginType') == 'firebase') {
       return _firebaseAuth.currentUser != null;
@@ -297,6 +303,9 @@ class UserService {
   }
 
   Future<String> getLoginType() async {
+    if (Firebase.apps.isNotEmpty && _firebaseAuth.currentUser != null) {
+      return 'firebase';
+    }
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('loginType') ?? 'none';
   }

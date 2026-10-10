@@ -10,9 +10,10 @@ class ChatService {
   User? get currentUser => _firebaseAuth.currentUser;
 
   Stream<List<Map<String, dynamic>>> getUsersStream() {
-    return _firestore.collection('Users').snapshots().map((snapshot) {
+    return _firestore.collection('users').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return <String, dynamic>{'uid': doc.id, ...doc.data()};
+        // Profiles are stored at users/{Firebase Auth UID}.
+        return <String, dynamic>{...doc.data(), 'uid': doc.id};
       }).toList();
     });
   }
@@ -22,6 +23,9 @@ class ChatService {
     final trimmedMessage = message.trim();
     if (currentUser == null) {
       throw StateError('You must be signed in to send a message.');
+    }
+    if (receiverId.isEmpty || receiverId == currentUser.uid) {
+      throw StateError('Select another registered user to send a message.');
     }
     if (trimmedMessage.isEmpty) return;
 
@@ -90,11 +94,11 @@ class ChatService {
 
   Future<String?> getUserByEmail(String email) async {
     final query = await _firestore
-        .collection('Users')
+        .collection('users')
         .where('email', isEqualTo: email.trim())
         .limit(1)
         .get();
     if (query.docs.isEmpty) return null;
-    return query.docs.first.data()['uid']?.toString() ?? query.docs.first.id;
+    return query.docs.first.id;
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class BrandedLoadingIndicator extends StatelessWidget {
   const BrandedLoadingIndicator({super.key, this.message = 'Loading...'});
@@ -12,31 +11,31 @@ class BrandedLoadingIndicator extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(24.w),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
               'assets/images/cat.png',
               key: const Key('brandedLoadingLogo'),
-              width: 112.w,
-              height: 112.w,
+              width: 112,
+              height: 112,
               fit: BoxFit.contain,
             ),
-            SizedBox(height: 18.h),
+            const SizedBox(height: 18),
             SizedBox(
-              width: 22.w,
-              height: 22.w,
+              width: 22,
+              height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
                 color: colors.secondary,
               ),
             ),
-            SizedBox(height: 12.h),
+            const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13.sp, color: colors.onSurfaceVariant),
+              style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant),
             ),
           ],
         ),

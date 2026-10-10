@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/chat_service.dart';
@@ -20,6 +22,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String _searchText = '';
   String? _identityError;
   bool _loadingIdentity = true;
+  StreamSubscription<dynamic>? _authSubscription;
 
   @override
   void initState() {
@@ -33,21 +36,19 @@ class _ChatScreenState extends State<ChatScreen> {
     if (value != _searchText) setState(() => _searchText = value);
   }
 
-  Future<void> _loadCurrentUser() async {
+  void _loadCurrentUser() {
     try {
-      final userService = UserService();
-      final loginType = await userService.getLoginType();
-      final firebaseUser = _chatService.currentUser;
-      if (loginType != 'firebase' || firebaseUser == null) {
-        throw StateError('Sign in with a Firebase account to use chat.');
-      }
-      final userData = await userService.getUserData();
-      if (!mounted) return;
-      setState(() {
-        _currentUserId = firebaseUser.uid;
-        _currentUserEmail =
-            userData?['email']?.toString() ?? firebaseUser.email ?? '';
-        _loadingIdentity = false;
+      // Firebase is the live identity; shared preferences can belong to another tab.
+      _authSubscription = UserService().authStateChanges.listen((firebaseUser) {
+        if (!mounted) return;
+        setState(() {
+          _currentUserId = firebaseUser?.uid ?? '';
+          _currentUserEmail = firebaseUser?.email?.trim().toLowerCase() ?? '';
+          _identityError = firebaseUser == null
+              ? 'Sign in with a Firebase account to use chat.'
+              : null;
+          _loadingIdentity = false;
+        });
       });
     } catch (error) {
       if (!mounted) return;
@@ -62,6 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _searchController
       ..removeListener(_handleSearchChanged)
       ..dispose();
@@ -129,9 +131,10 @@ class _ChatScreenState extends State<ChatScreen> {
         final users =
             (snapshot.data ?? const <Map<String, dynamic>>[]).where((user) {
               final uid = user['uid']?.toString() ?? '';
-              final email = user['email']?.toString() ?? '';
+              final email = user['email']?.toString().trim() ?? '';
               if (uid == _currentUserId ||
-                  email.toLowerCase() == _currentUserEmail.toLowerCase()) {
+                  (_currentUserEmail.isNotEmpty &&
+                      email.toLowerCase() == _currentUserEmail)) {
                 return false;
               }
               if (_searchText.isEmpty) return true;
