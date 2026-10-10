@@ -29,6 +29,22 @@ class UserService {
   Stream<firebase_auth.User?> get authStateChanges =>
       _firebaseAuth.authStateChanges();
 
+  Future<void> _saveCloudProfile(
+    String uid,
+    Map<String, dynamic> profile,
+  ) async {
+    // Keep the existing chat directory and lowercase profile collection in sync.
+    final batch = _firestore.batch();
+    for (final collection in ['Users', 'users']) {
+      batch.set(
+        _firestore.collection(collection).doc(uid),
+        profile,
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
+  }
+
   Future<firebase_auth.UserCredential> signIn({
     required String email,
     required String password,
@@ -59,7 +75,7 @@ class UserService {
       throw StateError('Firebase did not return the newly created user.');
     }
     await firebaseUser.updateDisplayName(username.trim());
-    await _firestore.collection('Users').doc(firebaseUser.uid).set({
+    await _saveCloudProfile(firebaseUser.uid, {
       'uid': firebaseUser.uid,
       'username': username.trim(),
       'email': email.trim(),
@@ -98,12 +114,12 @@ class UserService {
     // Firebase Authentication stores an account's username as its display name.
     await user.updateDisplayName(value);
     await user.reload();
-    await _firestore.collection('Users').doc(user.uid).set({
+    await _saveCloudProfile(user.uid, {
       'uid': user.uid,
       'username': value,
       'email': user.email ?? '',
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    });
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('username', value);
@@ -120,7 +136,11 @@ class UserService {
       password: password,
     );
     await user.reauthenticateWithCredential(credential);
-    await _firestore.collection('Users').doc(user.uid).delete();
+    final batch = _firestore.batch();
+    for (final collection in ['Users', 'users']) {
+      batch.delete(_firestore.collection(collection).doc(user.uid));
+    }
+    await batch.commit();
     await user.delete();
     await _clearSession();
   }
@@ -157,14 +177,14 @@ class UserService {
           : prefs.getString('username') ?? user.email ?? '',
     );
     await prefs.setString('accessToken', await user.getIdToken() ?? '');
-    await _firestore.collection('Users').doc(user.uid).set({
+    await _saveCloudProfile(user.uid, {
       'uid': user.uid,
       'username': firebaseUsername.isNotEmpty
           ? firebaseUsername
           : user.email ?? '',
       'email': user.email ?? '',
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    });
   }
 
   static bool acceptsCredentials(String username, String password) {
